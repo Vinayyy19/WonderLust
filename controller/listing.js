@@ -14,7 +14,6 @@ const razorpayInstance = new Razorpay({
     key_secret: process.env.RAZORPAY_KEY_SECRET
 });
 
-// ---------------------- Listings ----------------------
 
 module.exports.newListingSave = async(req,res)=>{
   const { title, description, image, price, location, country } = req.body;
@@ -143,7 +142,6 @@ module.exports.renderBookingPage = async (req, res) => {
   res.render("listing/book.ejs", { listing, availability: null });
 };
 
-// ---------------------- Payment ----------------------
 
 exports.createPayment = async (req, res) => {
   const { id } = req.params;

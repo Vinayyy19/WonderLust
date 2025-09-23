@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const Listing = require('../model/listing');
 const faqs = require('../init/faq.json');
+
 function getStaticIntentAndEntities(userMessage) {
+
     const lowerCaseMessage = userMessage.toLowerCase();
     let intent = "unknown_intent";
     let entities = {};
@@ -35,7 +37,7 @@ function getStaticIntentAndEntities(userMessage) {
         return { intent, entities };
     }
 
-    const name = ["what's ur name", "what's ur name ?", "name", "developed", "what is your name"];
+    const name = ["what's ur name", "what's ur name ?", "name","develop", "developed", "what is your name"];
     if (name.some(keyword => lowerCaseMessage.includes(keyword))) {
         intent = "name";
         return { intent, entities };
@@ -44,7 +46,7 @@ function getStaticIntentAndEntities(userMessage) {
 
     // --- Intent: FAQ Query ---
     const faqKeywordsMap = {
-        "wifi": ["wi-fi", "internet", "wireless"],
+        "wifi": ["wi-fi", "internet", "wireless","wifi","Wifi"],
         "check-in": ["check-in", "check in time", "arrival time"],
         "check-out": ["check-out", "check out time", "departure time"],
         "breakfast": ["breakfast", "food", "meal"],
@@ -62,42 +64,33 @@ function getStaticIntentAndEntities(userMessage) {
         }
     }
 
-
-    // --- Intent: Hotel Details Specific / Get Price ---
-    const knownListingTitles = [
-        "Deluxe King Room", "Mountain Retreat", "Standard Suite", "Beachfront Villa",
-        "Cozy Cabin", "City View Apartment", "Luxury Penthouse", "Garden View Room"
-    ];
-
-    for (const title of knownListingTitles) {
-        if (lowerCaseMessage.includes(title.toLowerCase())) {
-            entities.listing_title = title;
-            if (lowerCaseMessage.includes("price") || lowerCaseMessage.includes("cost")) {
-                intent = "get_price";
-            } else {
-                intent = "hotel_details_specific";
-            }
-            return { intent, entities };
-        }
-    }
-
-    const knownLocations = ["Mumbai", "Goa", "Delhi", "Bangalore", "Pune", "Kerala", "Jaipur"];
-    for (const location of knownLocations) {
-        if (lowerCaseMessage.includes(location.toLowerCase())) {
-            intent = "find_by_location";
-            entities.location = location;
-            return { intent, entities };
-        }
-    }
-
     return { intent, entities }; 
 }
 
 
 async function getChatbotResponse(userMessage) {
-    const intentData = getStaticIntentAndEntities(userMessage); 
-    const intent = intentData.intent;
-    const entities = intentData.entities || {};
+    const listingTitles = await Listing.distinct('title');
+    let intent = "unknown_intent";
+    let entities = {};
+
+    for (const title of listingTitles) {
+        if (userMessage.toLowerCase().includes(title.toLowerCase())) {
+            entities.listing_title = title;
+            if (userMessage.toLowerCase().includes("price") || userMessage.toLowerCase().includes("cost")) {
+                intent = "get_price";
+            } else {
+                intent = "hotel_details_specific";
+            }
+            break;
+        }
+    }
+
+    // If no listing intent found, use static intent detection
+    if (intent === "unknown_intent") {
+        const intentData = getStaticIntentAndEntities(userMessage);
+        intent = intentData.intent;
+        entities = { ...entities, ...intentData.entities };
+    }
 
     switch (intent) {
         case "greeting":
